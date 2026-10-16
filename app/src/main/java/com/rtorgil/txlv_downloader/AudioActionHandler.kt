@@ -7,7 +7,9 @@ import android.net.Uri
 import android.os.Environment
 import android.util.Log
 import androidx.core.content.FileProvider
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.FileOutputStream
@@ -16,24 +18,66 @@ import java.net.URL
 
 class AudioActionHandler(private val context: Context) {
 
-    fun downloadEpisode(episode: Episode) {
-        try {
-            val downloadManager = context.getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
-            val request = DownloadManager.Request(Uri.parse(episode.audioUrl)).apply {
-                setTitle(episode.title)
-                setDescription("Downloading episode: ${episode.title}")
-                setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
-                setDestinationInExternalPublicDir(
-                    Environment.DIRECTORY_DOWNLOADS,
-                    "Tenerife por la Verdad/Podcast_${episode.id}.mp3"
-                )
-                addRequestHeader("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64)")
-                setAllowedOverMetered(true)
-                setAllowedOverRoaming(true)
+    fun downloadEpisode(episode: Episode, folderName: String) {
+        val prefs = context.getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
+        val treeUriStr = prefs.getString("download_tree_uri", null)
+
+        if (treeUriStr != null) {
+            CoroutineScope(Dispatchers.IO).launch {
+                try {
+                    val treeUri = Uri.parse(treeUriStr)
+                    val documentFile = androidx.documentfile.provider.DocumentFile.fromTreeUri(context, treeUri)
+                    val fileName = "Podcast_${episode.id}.mp3"
+                    
+                    withContext(Dispatchers.Main) {
+                        android.widget.Toast.makeText(context, "Descargando en carpeta personalizada...", android.widget.Toast.LENGTH_SHORT).show()
+                    }
+                    
+                    val newFile = documentFile?.createFile("audio/mpeg", fileName)
+                    if (newFile != null) {
+                        val request = okhttp3.Request.Builder().url(episode.audioUrl)
+                            .header("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64)")
+                            .build()
+                        val client = okhttp3.OkHttpClient()
+                        val response = client.newCall(request).execute()
+                        if (response.isSuccessful) {
+                            val outputStream = context.contentResolver.openOutputStream(newFile.uri)
+                            outputStream?.use { out ->
+                                response.body?.byteStream()?.use { input ->
+                                    input.copyTo(out)
+                                }
+                            }
+                            withContext(Dispatchers.Main) {
+                                android.widget.Toast.makeText(context, "Descarga completada", android.widget.Toast.LENGTH_SHORT).show()
+                            }
+                        } else {
+                           Log.e("AudioActionHandler", "Download failed: ${response.code}")
+                        }
+                    }
+                } catch(e: Exception) {
+                    Log.e("AudioActionHandler", "Error downloading to SAF", e)
+                }
             }
-            downloadManager.enqueue(request)
-        } catch (e: Exception) {
-            Log.e("AudioActionHandler", "Failed to enqueue download", e)
+        } else {
+            try {
+                val fileName = "Podcast_${episode.id}.mp3"
+                val downloadManager = context.getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
+                val request = DownloadManager.Request(Uri.parse(episode.audioUrl)).apply {
+                    setTitle(episode.title)
+                    setDescription("Downloading episode: ${episode.title}")
+                    setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
+                    setDestinationInExternalPublicDir(
+                        Environment.DIRECTORY_DOWNLOADS,
+                        "$folderName/$fileName"
+                    )
+                    addRequestHeader("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64)")
+                    setAllowedOverMetered(true)
+                    setAllowedOverRoaming(true)
+                }
+                downloadManager.enqueue(request)
+            } catch (e: Exception) {
+                Log.e("AudioActionHandler", "Failed to enqueue download", e)
+            }
         }
     }
 

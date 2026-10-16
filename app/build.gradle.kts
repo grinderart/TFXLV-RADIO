@@ -16,7 +16,7 @@ android {
         minSdk = 24
         targetSdk = 37
         versionCode = 1
-        versionName = "1.0"
+        versionName = "1.2"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -77,6 +77,7 @@ dependencies {
     implementation(libs.play.services.location)
     implementation(libs.retrofit)
     implementation("androidx.media3:media3-exoplayer:1.4.1")
+    implementation("androidx.documentfile:documentfile:1.0.1")
     testImplementation(libs.androidx.core)
     testImplementation(libs.androidx.junit)
     testImplementation(libs.junit)

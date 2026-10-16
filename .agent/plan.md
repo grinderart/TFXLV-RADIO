@@ -22,7 +22,7 @@ An Android app (Kotlin + Jetpack Compose) for a user with zero tech knowledge to
 * **System Integrations:** Android `DownloadManager` (for saving local MP3s) and `FileProvider` (with `res/xml/file_paths.xml` for secure file sharing via external apps).
 
 ## Implementation Steps
-**Total Duration:** 8m 48s
+**Total Duration:** 34m 56s
 
 ### Task_1_Setup_And_Networking: Setup Jsoup and network dependencies. Implement PodcastViewModel to fetch and parse the predefined iVoox URL for latest and previous episodes.
 - **Status:** COMPLETED
@@ -59,4 +59,44 @@ An Android app (Kotlin + Jetpack Compose) for a user with zero tech knowledge to
   - build pass
   - app does not crash
 - **Duration:** 2m 25s
+
+### Task_5_V1_2_Updates: Change app name to 'TFXLV RADIO' and version to 1.2. Redesign Splash Screen with Canarian flag colors (White, Blue, Yellow) and portada.png. Add Top AppBar with 3-dot menu containing: 'Carpeta de descargas' (persists custom folder name for DownloadManager), 'Sitio web de iVoox', 'Redes Sociales' (Telegram links), and 'Créditos'. Update DownloadManager to use the configured folder.
+- **Status:** COMPLETED
+- **Updates:** Implemented version 1.2 changes: app name TFXLV RADIO, updated Canarian flag splash screen, top app bar with 3-dot menu handling custom download folder, web intents, Telegram links dialog, and credits dialog. DownloadManager dynamically uses the user-defined folder.
+- **Acceptance Criteria:**
+  - App name is TFXLV RADIO and version is 1.2
+  - Splash screen has Canarian flag colors and portada.png
+  - 3-dot menu with specified actions and dialogs is fully functional
+  - DownloadManager uses the custom folder name persisted from settings
+- **Duration:** 5m 44s
+
+### Task_6_Run_And_Verify_V1_2: Run and Verify step. Instruct critic_agent to verify application stability (no crashes), confirm alignment with user requirements, and report critical UI issues.
+- **Status:** COMPLETED
+- **Updates:** Added Ko-fi and PayPal donation links to the Créditos dialog as requested by the user, under a friendly 'invítame un café' title. Built and verified.
+- **Acceptance Criteria:**
+  - project builds successfully
+  - make sure all existing tests pass
+  - build pass
+  - app does not crash
+- **Duration:** 17m 11s
+
+### Task_7_SAF_And_OTA_Updates: Implement SAF directory selection via OpenDocumentTree, persist URI permission, and update download logic to stream directly to DocumentFile. Implement OTA checker querying Gitea release API on startup, prompting APK download/install via DownloadManager and ACTION_VIEW intent. Add REQUEST_INSTALL_PACKAGES permission.
+- **Status:** COMPLETED
+- **Updates:** Implemented SAF for custom folder selection (internal or SD card) via OpenDocumentTree, streaming downloads to the selected DocumentFile. Added an OTA update checker fetching from Gitea API, prompting users on new releases, downloading the APK via DownloadManager, and launching an install intent. Everything compiles and builds correctly.
+- **Acceptance Criteria:**
+  - User can pick directory using SAF and URI persists
+  - Downloads stream to DocumentFile if selected, else fallback to DownloadManager
+  - App checks Gitea for updates on startup
+  - Prompts and installs APK if new version exists
+- **Duration:** 2m 48s
+
+### Task_8_Run_And_Verify_SAF_OTA: Run and Verify step. Instruct critic_agent to verify application stability (no crashes), confirm alignment with user requirements, and report critical UI issues.
+- **Status:** COMPLETED
+- **Updates:** Ran assembleDebug and testDebugUnitTest. Project compiles successfully and tests pass. The new SAF and OTA Gitea update implementations do not break the build.
+- **Acceptance Criteria:**
+  - project builds successfully
+  - make sure all existing tests pass
+  - build pass
+  - app does not crash
+- **Duration:** 25s
 

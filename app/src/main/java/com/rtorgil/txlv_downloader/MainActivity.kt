@@ -4,6 +4,9 @@ import androidx.compose.foundation.Image
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.material.icons.filled.PlayArrow
+import android.content.Context
+import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.ComponentActivity
@@ -17,6 +20,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Download
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.*
@@ -31,6 +35,18 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.rtorgil.txlv_downloader.ui.theme.TXLVDownloaderTheme
 import kotlinx.coroutines.launch
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.activity.compose.rememberLauncherForActivityResult
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.Dispatchers
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import org.json.JSONObject
+import android.app.DownloadManager
+import android.content.BroadcastReceiver
+import android.content.IntentFilter
+import android.os.Environment
+import androidx.core.content.ContextCompat
 
 class MainActivity : ComponentActivity() {
     private lateinit var audioActionHandler: AudioActionHandler
@@ -66,13 +82,28 @@ fun SplashScreen() {
         modifier = Modifier.fillMaxSize(),
         contentAlignment = Alignment.Center
     ) {
+        Row(modifier = Modifier.fillMaxSize()) {
+            Box(modifier = Modifier.weight(1f).fillMaxHeight().background(Color.White))
+            Box(modifier = Modifier.weight(1f).fillMaxHeight().background(Color(0xFF0050A4)))
+            Box(modifier = Modifier.weight(1f).fillMaxHeight().background(Color(0xFFFFD100)))
+        }
         Image(
-            painter = painterResource(id = R.drawable.imagen),
+            painter = painterResource(id = R.drawable.portada),
             contentDescription = "Splash Screen",
-            modifier = Modifier.fillMaxSize(),
-            contentScale = androidx.compose.ui.layout.ContentScale.Crop
+            modifier = Modifier.align(Alignment.Center),
+            contentScale = ContentScale.Fit
         )
     }
+}
+
+fun getDownloadFolder(context: Context): String {
+    val prefs = context.getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
+    return prefs.getString("download_folder", "Tenerife por la Verdad") ?: "Tenerife por la Verdad"
+}
+
+fun saveDownloadFolder(context: Context, folderName: String) {
+    val prefs = context.getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
+    prefs.edit().putString("download_folder", folderName).apply()
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -91,9 +122,52 @@ fun AppContent(
     var isSharing by remember { mutableStateOf(false) }
     var selectedEpisodeForPlayback by remember { mutableStateOf<Episode?>(null) }
 
+    var showFolderDialog by remember { mutableStateOf(false) }
+    var showSocialDialog by remember { mutableStateOf(false) }
+    var showCreditsDialog by remember { mutableStateOf(false) }
+    
+    var showUpdateDialog by remember { mutableStateOf(false) }
+    var updateUrl by remember { mutableStateOf("") }
+    var newVersionName by remember { mutableStateOf("") }
+
+    val documentTreeLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.OpenDocumentTree()
+    ) { uri ->
+        if (uri != null) {
+            val flags = Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
+            context.contentResolver.takePersistableUriPermission(uri, flags)
+            val prefs = context.getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
+            prefs.edit().putString("download_tree_uri", uri.toString()).apply()
+            Toast.makeText(context, "Carpeta de descargas actualizada", Toast.LENGTH_SHORT).show()
+        }
+    }
+
     LaunchedEffect(Unit) {
         if (episodes.isEmpty()) {
             viewModel.fetchEpisodes()
+        }
+        
+        withContext(Dispatchers.IO) {
+            try {
+                val response = OkHttpClient().newCall(
+                    Request.Builder().url("https://rtorgil.ynh.fr/api/v1/repos/rtorgil/TXLV-Ivoox/releases/latest").build()
+                ).execute()
+                if (response.isSuccessful) {
+                    val json = JSONObject(response.body?.string() ?: "")
+                    val tagName = json.getString("tag_name").replace("v", "")
+                    val currentVersion = context.packageManager.getPackageInfo(context.packageName, 0).versionName
+                    if (tagName != currentVersion) {
+                        val assets = json.getJSONArray("assets")
+                        if (assets.length() > 0) {
+                            updateUrl = assets.getJSONObject(0).getString("browser_download_url")
+                            newVersionName = tagName
+                            showUpdateDialog = true
+                        }
+                    }
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
         }
     }
 
@@ -112,6 +186,43 @@ fun AppContent(
                         Icon(Icons.Default.Refresh, contentDescription = "Actualizar")
                         Spacer(modifier = Modifier.width(4.dp))
                         Text("Actualizar", fontSize = 18.sp)
+                    }
+                    var menuExpanded by remember { mutableStateOf(false) }
+                    IconButton(onClick = { menuExpanded = true }) {
+                        Icon(Icons.Default.MoreVert, contentDescription = "Más opciones")
+                    }
+                    DropdownMenu(
+                        expanded = menuExpanded,
+                        onDismissRequest = { menuExpanded = false }
+                    ) {
+                        DropdownMenuItem(
+                            text = { Text("Carpeta de descargas") },
+                            onClick = { 
+                                menuExpanded = false
+                                documentTreeLauncher.launch(null)
+                            }
+                        )
+                        DropdownMenuItem(
+                            text = { Text("Web iVoox") },
+                            onClick = { 
+                                menuExpanded = false
+                                context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://www.ivoox.com/podcast-tenerife-despierta_sq_f12614052_1.html")))
+                            }
+                        )
+                        DropdownMenuItem(
+                            text = { Text("Redes Sociales") },
+                            onClick = { 
+                                menuExpanded = false
+                                showSocialDialog = true
+                            }
+                        )
+                        DropdownMenuItem(
+                            text = { Text("Créditos") },
+                            onClick = { 
+                                menuExpanded = false
+                                showCreditsDialog = true
+                            }
+                        )
                     }
                 }
             )
@@ -218,7 +329,8 @@ fun AppContent(
                                     
                                     OutlinedButton(
                                         onClick = {
-                                            audioActionHandler.downloadEpisode(latestEpisode)
+                                            val folderName = getDownloadFolder(context)
+                                            audioActionHandler.downloadEpisode(latestEpisode, folderName)
                                             Toast.makeText(context, "Iniciando descarga...", Toast.LENGTH_SHORT).show()
                                         },
                                         modifier = Modifier.fillMaxWidth(),
@@ -307,7 +419,8 @@ fun AppContent(
                                         
                                         OutlinedButton(
                                             onClick = {
-                                                audioActionHandler.downloadEpisode(episode)
+                                                val folderName = getDownloadFolder(context)
+                                                audioActionHandler.downloadEpisode(episode, folderName)
                                                 Toast.makeText(context, "Iniciando descarga...", Toast.LENGTH_SHORT).show()
                                             },
                                             modifier = Modifier.fillMaxWidth(),
@@ -346,6 +459,161 @@ fun AppContent(
                         }
                     }
                 }
+            }
+            
+            if (showFolderDialog) {
+                var folderName by remember { mutableStateOf(getDownloadFolder(context)) }
+                AlertDialog(
+                    onDismissRequest = { showFolderDialog = false },
+                    title = { Text("Carpeta de descargas") },
+                    text = {
+                        OutlinedTextField(
+                            value = folderName,
+                            onValueChange = { folderName = it },
+                            label = { Text("Nombre de la carpeta") }
+                        )
+                    },
+                    confirmButton = {
+                        TextButton(onClick = {
+                            saveDownloadFolder(context, folderName)
+                            showFolderDialog = false
+                        }) {
+                            Text("Guardar")
+                        }
+                    },
+                    dismissButton = {
+                        TextButton(onClick = { showFolderDialog = false }) {
+                            Text("Cancelar")
+                        }
+                    }
+                )
+            }
+
+            if (showSocialDialog) {
+                AlertDialog(
+                    onDismissRequest = { showSocialDialog = false },
+                    title = { Text("Redes Sociales") },
+                    text = {
+                        Column {
+                            val links = listOf(
+                                "Tenerife por la Verdad" to "https://t.me/Tfeverdad",
+                                "Tenerife por la verdad (Grupo)" to "https://t.me/Tenerifeporlaverdad",
+                                "GeoIn Canarias" to "https://t.me/GeoinCanarias",
+                                "Que tu alimento..." to "https://t.me/Quetualimetoseatumedicamento",
+                                "Tenerife Despierta" to "https://t.me/TenerifeDespierta"
+                            )
+                            links.forEach { (name, url) ->
+                                TextButton(onClick = {
+                                    context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
+                                }) {
+                                    Text(name)
+                                }
+                            }
+                        }
+                    },
+                    confirmButton = {
+                        TextButton(onClick = { showSocialDialog = false }) {
+                            Text("Cerrar")
+                        }
+                    }
+                )
+            }
+
+            if (showCreditsDialog) {
+                AlertDialog(
+                    onDismissRequest = { showCreditsDialog = false },
+                    title = { Text("Créditos") },
+                    text = {
+                        Column {
+                            Text(
+                                "software open source , totalmente libre y sin judiadas ",
+                                fontSize = 16.sp
+                            )
+                            Spacer(modifier = Modifier.height(16.dp))
+                            Text(
+                                "Si te resulta útil, ¡invítame a un café! ☕",
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 18.sp,
+                                textAlign = TextAlign.Center,
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                            Spacer(modifier = Modifier.height(16.dp))
+                            OutlinedButton(
+                                onClick = {
+                                    context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://ko-fi.com/rtorgil")))
+                                },
+                                modifier = Modifier.fillMaxWidth(),
+                                contentPadding = PaddingValues(12.dp)
+                            ) {
+                                Text("Apoyar en Ko-fi", fontSize = 18.sp)
+                            }
+                            Spacer(modifier = Modifier.height(8.dp))
+                            OutlinedButton(
+                                onClick = {
+                                    context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://paypal.me/rtorgil")))
+                                },
+                                modifier = Modifier.fillMaxWidth(),
+                                contentPadding = PaddingValues(12.dp)
+                            ) {
+                                Text("Apoyar en PayPal", fontSize = 18.sp)
+                            }
+                        }
+                    },
+                    confirmButton = {
+                        TextButton(onClick = { showCreditsDialog = false }) {
+                            Text("Cerrar")
+                        }
+                    }
+                )
+            }
+            
+            if (showUpdateDialog) {
+                AlertDialog(
+                    onDismissRequest = { showUpdateDialog = false },
+                    title = { Text("Actualización disponible") },
+                    text = { Text("Hay una nueva versión ($newVersionName) disponible. ¿Deseas descargarla e instalarla?") },
+                    confirmButton = {
+                        TextButton(onClick = {
+                            showUpdateDialog = false
+                            val downloadManager = context.getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
+                            val request = DownloadManager.Request(Uri.parse(updateUrl))
+                                .setTitle("Actualizando TXLV Downloader")
+                                .setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, "TXLV_update.apk")
+                                .setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
+                            val downloadId = downloadManager.enqueue(request)
+                            
+                            val receiver = object : BroadcastReceiver() {
+                                override fun onReceive(c: Context, intent: Intent) {
+                                    val id = intent.getLongExtra(DownloadManager.EXTRA_DOWNLOAD_ID, -1)
+                                    if (id == downloadId) {
+                                        val uri = downloadManager.getUriForDownloadedFile(downloadId)
+                                        if (uri != null) {
+                                            val installIntent = Intent(Intent.ACTION_VIEW).apply {
+                                                setDataAndType(uri, "application/vnd.android.package-archive")
+                                                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_GRANT_READ_URI_PERMISSION
+                                            }
+                                            c.startActivity(installIntent)
+                                        }
+                                        c.unregisterReceiver(this)
+                                    }
+                                }
+                            }
+                            ContextCompat.registerReceiver(
+                                context,
+                                receiver, 
+                                IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE),
+                                ContextCompat.RECEIVER_EXPORTED
+                            )
+                        }) {
+                            Text("Actualizar")
+                        }
+                    },
+                    dismissButton = {
+                        TextButton(onClick = { showUpdateDialog = false }) {
+                            Text("Cancelar")
+                        }
+                    }
+                )
             }
             
             selectedEpisodeForPlayback?.let { episode ->
