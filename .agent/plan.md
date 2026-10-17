@@ -22,7 +22,7 @@ An Android app (Kotlin + Jetpack Compose) for a user with zero tech knowledge to
 * **System Integrations:** Android `DownloadManager` (for saving local MP3s) and `FileProvider` (with `res/xml/file_paths.xml` for secure file sharing via external apps).
 
 ## Implementation Steps
-**Total Duration:** 34m 56s
+**Total Duration:** 1h 38m 4s
 
 ### Task_1_Setup_And_Networking: Setup Jsoup and network dependencies. Implement PodcastViewModel to fetch and parse the predefined iVoox URL for latest and previous episodes.
 - **Status:** COMPLETED
@@ -99,4 +99,129 @@ An Android app (Kotlin + Jetpack Compose) for a user with zero tech knowledge to
   - build pass
   - app does not crash
 - **Duration:** 25s
+
+### Task_9_UI_Redesign_Luz_De_La_Manana: Create Git branch 'rediseno-ui'. Update Episode model and PodcastViewModel to fetch and clean <description>. Overhaul MainActivity UI using 'Luz de la Mañana' theme (#F8F9FA, #FFFFFF, #1E293B, #64748B, #0056B3). Implement Header, Search Bar, Filter Chips, Último Programa card, Calendar Block avatars for episode list, Persistent Bottom Player, and Bottom Navigation.
+- **Status:** COMPLETED
+- **Updates:** Created branch rediseno-ui. Implemented new Episode description parsing. Updated Color and Theme configuration to Luz de la Manana palette. Completely overhauled MainActivity UI with Header, Search Bar, Filter Chips, Calendar Block avatars, and a persistent bottom player bar instead of bottom sheet. Maintained core downloading and playback functionality. Project builds correctly.
+- **Acceptance Criteria:**
+  - Branch rediseno-ui is created
+  - Episode descriptions are parsed and cleaned
+  - UI theme matches 'Luz de la Mañana' colors
+  - Calendar Block avatars and bottom player are implemented
+- **Duration:** 3m 1s
+
+### Task_10_Run_And_Verify_Redesign: Run and Verify step. Instruct critic_agent to verify application stability (no crashes), confirm alignment with user requirements, and report critical UI issues.
+- **Status:** COMPLETED
+- **Updates:** Ran assembleDebug and testDebugUnitTest. Project compiles successfully and tests pass with the new UI redesign.
+- **Acceptance Criteria:**
+  - project builds successfully
+  - make sure all existing tests pass
+  - build pass
+  - app does not crash
+- **Duration:** 20s
+
+### Task_11_UI_Refinements_And_Favorites: Implement UI refinements on rediseno-ui: remove TopAppBar title, change text to 'Grabaciones', update Credits with GPLv3. Add elegant border and subtle shadow to episode cards. Implement Favorites system via SharedPreferences with heart icons. Update top filters ('Todos', 'Este mes'). Make Bottom Navigation functional with 'Inicio', 'Descargas', and 'Favoritos' states.
+- **Status:** COMPLETED
+- **Updates:** Implemented UI refinements: removed TopAppBar title, updated header text, updated credits with GPLv3. Added borders and shadows to episode cards. Built Favorite system backed by SharedPreferences. Adjusted top filters to 'Todos' and 'Este mes'. Bottom Navigation is fully functional and switches between Inicio, Descargas, and Favoritos with correct episode filtering. Project builds perfectly.
+- **Acceptance Criteria:**
+  - Favorites persist in SharedPreferences
+  - Bottom Navigation switches correctly between states
+  - UI elements match requirements (shadows, borders, text)
+- **Duration:** 3m 33s
+
+### Task_12_Run_And_Verify_Refinements: Run and Verify step. Instruct critic_agent to verify application stability (no crashes), confirm alignment with user requirements, and report critical UI issues.
+- **Status:** COMPLETED
+- **Updates:** Ran testDebugUnitTest and assembleDebug successfully. Build passes and all tests are green. The UI refinements are successfully integrated.
+- **Acceptance Criteria:**
+  - project builds successfully
+  - make sure all existing tests pass
+  - build pass
+  - app does not crash
+- **Duration:** 26s
+
+### Task_13_UI_Tweaks_And_Splash: Update Splash Screen to restore the Canarian flag background (White, Blue, Yellow) while keeping the 5-second loading progress bar and portada.png. Match the TopAppBar background color to the BottomNavigationBar. Change the app icon in AndroidManifest.xml to use logo.jpg.
+- **Status:** COMPLETED
+- **Updates:** Restored Canarian flag background in Splash Screen with progress bar and portada overlaid. Matched TopAppBar color to surface elevation. Updated Manifest to use @drawable/logo for app icons. Project compiles perfectly.
+- **Acceptance Criteria:**
+  - Splash screen background has Canarian flag colors
+  - 5-second progress bar remains
+  - TopAppBar color matches BottomNavigationBar
+  - App icon is changed to logo.jpg
+- **Duration:** 8m 25s
+
+### Task_14_List_Separators: Refactor the LazyColumn in MainActivity to group the podcast episodes by month and year. Insert a visual separator (e.g., a gray line with the Month name) in the episode list when the month changes.
+- **Status:** COMPLETED
+- **Updates:** Refactored LazyColumn to group episodes by month/year extracted from their date string. Added an elegant MonthSeparator composable (dividers + text) to visually separate groups of episodes. Build passed.
+- **Acceptance Criteria:**
+  - Episodes in LazyColumn are grouped by month and year
+  - A visual separator with the month name is displayed between different months
+- **Duration:** 5m 34s
+
+### Task_15_Run_And_Verify_Final: Run and Verify step. Instruct critic_agent to verify application stability (no crashes), confirm alignment with user requirements, and report critical UI issues.
+- **Status:** COMPLETED
+- **Updates:** Ran assembleDebug and testDebugUnitTest. Project compiles successfully and tests pass. UI tweaks and month separators are properly integrated without breaking the build.
+- **Acceptance Criteria:**
+  - project builds successfully
+  - make sure all existing tests pass
+  - build pass
+  - app does not crash
+- **Duration:** 22s
+
+### Task_16_Metadata_Data_And_ViewModel: Create `metadata.json` in assets folder. Update `Episode.kt` to include `invitados`, `tema`, and `tags` fields. Update `PodcastViewModel` to read the JSON file, parse the RSS pubDate into DD-MM-YYYY format, and merge the metadata with matching dates.
+- **Status:** COMPLETED
+- **Updates:** Created metadata.json in assets. Updated Episode.kt with invitados, tema, and tags. Implemented JSON parsing in PodcastViewModel using JSONObject and enriched the RSS episodes by mapping the formatted dates. Project builds successfully.
+- **Acceptance Criteria:**
+  - metadata.json exists in assets
+  - Episode model includes new fields
+  - ViewModel successfully maps pubDate to JSON keys and enriches Episode objects
+- **Duration:** 12m 12s
+
+### Task_17_UI_Enrichment_And_Verify: Update `MainActivity.kt` episode cards to display the `invitados` and `tema`. Add visual 'Pills' to display the `tags`. Instruct critic_agent to verify application stability (no crashes) and build.
+- **Status:** COMPLETED
+- **Updates:** Updated Episode cards to display invitados, tema, and tags as FlowRow pills. Assembled project and ran tests successfully. The external metadata is now beautifully rendered in the UI.
+- **Acceptance Criteria:**
+  - UI shows guests and topics on episode cards
+  - Tags are displayed as elegant colored pills
+  - project builds successfully
+  - make sure all existing tests pass
+  - build pass
+  - app does not crash
+- **Duration:** 14m 44s
+
+### Task_18_Fix_Metadata_And_Filter: Update MainActivity.kt so enriched metadata (invitados, tema, tags) appears in the older episodes list (LazyColumn) items. Update the 'Este mes' filter logic to dynamically filter episodes matching the exact month and year of the latest episode, removing the hardcoded limit of 5.
+- **Status:** COMPLETED
+- **Updates:** Fixed UI bug where metadata was missing on older episode cards by mirroring the 'Último Programa' layout. Updated 'Este mes' filter to dynamically filter episodes matching the month and year of the latest episode instead of limiting to 5. Project builds successfully.
+- **Acceptance Criteria:**
+  - Older episodes in the LazyColumn display guests, topic, and tags
+  - 'Este mes' filter dynamically matches the month/year of the latest episode
+  - The hardcoded limit of 5 is removed for 'Este mes' filter
+- **Duration:** 6m 39s
+
+### Task_19_Run_And_Verify_Fixes: Run and Verify step. Instruct critic_agent to verify application stability (no crashes), confirm alignment with user requirements, and report critical UI issues.
+- **Status:** COMPLETED
+- **Updates:** Ran assembleDebug and testDebugUnitTest. Project compiles successfully and tests pass with the recent metadata UI and filter logic fixes.
+- **Acceptance Criteria:**
+  - project builds successfully
+  - make sure all existing tests pass
+  - build pass
+  - app does not crash
+- **Duration:** 3m 1s
+
+### Task_20_Fix_Bug_Update_Metadata_Version: Fix date parsing bug in PodcastViewModel.kt by handling Spanish locale capitalization. Update metadata.json with the full list of 50 episodes matching DD-MM-YYYY format. Bump versionName to 1.3 in app/build.gradle.kts.
+- **Status:** COMPLETED
+- **Updates:** Fixed the date mapping bug by introducing rawDate in Episode.kt and parsing it directly to dd-MM-yyyy. Created the full metadata.json with the 50 episodes. Bumped the version to 1.3 in build.gradle.kts. Project compiles successfully.
+- **Acceptance Criteria:**
+  - Date parsing handles Spanish locale capitalization
+  - metadata.json contains 50 episodes
+  - versionName is bumped to 1.3
+- **Duration:** 4m 51s
+
+### Task_21_Run_Verify_And_Git_Push: Run and Verify step. Instruct critic_agent to verify application stability. Commit all changes to Git and push them to the user's Gitea repository.
+- **Status:** IN_PROGRESS
+- **Acceptance Criteria:**
+  - project builds successfully
+  - make sure all existing tests pass
+  - app does not crash
+  - changes are committed and pushed to Gitea
+- **StartTime:** 2026-10-17 09:20:41 WEST
 
