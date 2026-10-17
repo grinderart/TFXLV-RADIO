@@ -1,0 +1,402 @@
+{
+    "14-05-2025": {
+        "invitados": "Invitado 1",
+        "tema": "Tema del episodio 1",
+        "tags": [
+            "podcast",
+            "tag1"
+        ]
+    },
+    "28-05-2025": {
+        "invitados": "Invitado 2",
+        "tema": "Tema del episodio 2",
+        "tags": [
+            "podcast",
+            "tag2"
+        ]
+    },
+    "11-06-2025": {
+        "invitados": "Invitado 3",
+        "tema": "Tema del episodio 3",
+        "tags": [
+            "podcast",
+            "tag3"
+        ]
+    },
+    "25-06-2025": {
+        "invitados": "Invitado 4",
+        "tema": "Tema del episodio 4",
+        "tags": [
+            "podcast",
+            "tag4"
+        ]
+    },
+    "09-07-2025": {
+        "invitados": "Invitado 5",
+        "tema": "Tema del episodio 5",
+        "tags": [
+            "podcast",
+            "tag5"
+        ]
+    },
+    "23-07-2025": {
+        "invitados": "Invitado 6",
+        "tema": "Tema del episodio 6",
+        "tags": [
+            "podcast",
+            "tag6"
+        ]
+    },
+    "06-08-2025": {
+        "invitados": "Invitado 7",
+        "tema": "Tema del episodio 7",
+        "tags": [
+            "podcast",
+            "tag7"
+        ]
+    },
+    "20-08-2025": {
+        "invitados": "Invitado 8",
+        "tema": "Tema del episodio 8",
+        "tags": [
+            "podcast",
+            "tag8"
+        ]
+    },
+    "03-09-2025": {
+        "invitados": "Invitado 9",
+        "tema": "Tema del episodio 9",
+        "tags": [
+            "podcast",
+            "tag9"
+        ]
+    },
+    "17-09-2025": {
+        "invitados": "Invitado 10",
+        "tema": "Tema del episodio 10",
+        "tags": [
+            "podcast",
+            "tag10"
+        ]
+    },
+    "01-10-2025": {
+        "invitados": "Invitado 11",
+        "tema": "Tema del episodio 11",
+        "tags": [
+            "podcast",
+            "tag11"
+        ]
+    },
+    "15-10-2025": {
+        "invitados": "Invitado 12",
+        "tema": "Tema del episodio 12",
+        "tags": [
+            "podcast",
+            "tag12"
+        ]
+    },
+    "29-10-2025": {
+        "invitados": "Invitado 13",
+        "tema": "Tema del episodio 13",
+        "tags": [
+            "podcast",
+            "tag13"
+        ]
+    },
+    "12-11-2025": {
+        "invitados": "Invitado 14",
+        "tema": "Tema del episodio 14",
+        "tags": [
+            "podcast",
+            "tag14"
+        ]
+    },
+    "26-11-2025": {
+        "invitados": "Invitado 15",
+        "tema": "Tema del episodio 15",
+        "tags": [
+            "podcast",
+            "tag15"
+        ]
+    },
+    "10-12-2025": {
+        "invitados": "Invitado 16",
+        "tema": "Tema del episodio 16",
+        "tags": [
+            "podcast",
+            "tag16"
+        ]
+    },
+    "24-12-2025": {
+        "invitados": "Invitado 17",
+        "tema": "Tema del episodio 17",
+        "tags": [
+            "podcast",
+            "tag17"
+        ]
+    },
+    "07-01-2026": {
+        "invitados": "Invitado 18",
+        "tema": "Tema del episodio 18",
+        "tags": [
+            "podcast",
+            "tag18"
+        ]
+    },
+    "21-01-2026": {
+        "invitados": "Invitado 19",
+        "tema": "Tema del episodio 19",
+        "tags": [
+            "podcast",
+            "tag19"
+        ]
+    },
+    "04-02-2026": {
+        "invitados": "Invitado 20",
+        "tema": "Tema del episodio 20",
+        "tags": [
+            "podcast",
+            "tag20"
+        ]
+    },
+    "18-02-2026": {
+        "invitados": "Invitado 21",
+        "tema": "Tema del episodio 21",
+        "tags": [
+            "podcast",
+            "tag21"
+        ]
+    },
+    "04-03-2026": {
+        "invitados": "Invitado 22",
+        "tema": "Tema del episodio 22",
+        "tags": [
+            "podcast",
+            "tag22"
+        ]
+    },
+    "18-03-2026": {
+        "invitados": "Invitado 23",
+        "tema": "Tema del episodio 23",
+        "tags": [
+            "podcast",
+            "tag23"
+        ]
+    },
+    "01-04-2026": {
+        "invitados": "Invitado 24",
+        "tema": "Tema del episodio 24",
+        "tags": [
+            "podcast",
+            "tag24"
+        ]
+    },
+    "15-04-2026": {
+        "invitados": "Invitado 25",
+        "tema": "Tema del episodio 25",
+        "tags": [
+            "podcast",
+            "tag25"
+        ]
+    },
+    "29-04-2026": {
+        "invitados": "Invitado 26",
+        "tema": "Tema del episodio 26",
+        "tags": [
+            "podcast",
+            "tag26"
+        ]
+    },
+    "13-05-2026": {
+        "invitados": "Invitado 27",
+        "tema": "Tema del episodio 27",
+        "tags": [
+            "podcast",
+            "tag27"
+        ]
+    },
+    "27-05-2026": {
+        "invitados": "Invitado 28",
+        "tema": "Tema del episodio 28",
+        "tags": [
+            "podcast",
+            "tag28"
+        ]
+    },
+    "10-06-2026": {
+        "invitados": "Invitado 29",
+        "tema": "Tema del episodio 29",
+        "tags": [
+            "podcast",
+            "tag29"
+        ]
+    },
+    "24-06-2026": {
+        "invitados": "Invitado 30",
+        "tema": "Tema del episodio 30",
+        "tags": [
+            "podcast",
+            "tag30"
+        ]
+    },
+    "08-07-2026": {
+        "invitados": "Invitado 31",
+        "tema": "Tema del episodio 31",
+        "tags": [
+            "podcast",
+            "tag31"
+        ]
+    },
+    "22-07-2026": {
+        "invitados": "Invitado 32",
+        "tema": "Tema del episodio 32",
+        "tags": [
+            "podcast",
+            "tag32"
+        ]
+    },
+    "05-08-2026": {
+        "invitados": "Invitado 33",
+        "tema": "Tema del episodio 33",
+        "tags": [
+            "podcast",
+            "tag33"
+        ]
+    },
+    "19-08-2026": {
+        "invitados": "Invitado 34",
+        "tema": "Tema del episodio 34",
+        "tags": [
+            "podcast",
+            "tag34"
+        ]
+    },
+    "02-09-2026": {
+        "invitados": "Invitado 35",
+        "tema": "Tema del episodio 35",
+        "tags": [
+            "podcast",
+            "tag35"
+        ]
+    },
+    "16-09-2026": {
+        "invitados": "Invitado 36",
+        "tema": "Tema del episodio 36",
+        "tags": [
+            "podcast",
+            "tag36"
+        ]
+    },
+    "30-09-2026": {
+        "invitados": "Invitado 37",
+        "tema": "Tema del episodio 37",
+        "tags": [
+            "podcast",
+            "tag37"
+        ]
+    },
+    "14-10-2026": {
+        "invitados": "Invitado 38",
+        "tema": "Tema del episodio 38",
+        "tags": [
+            "podcast",
+            "tag38"
+        ]
+    },
+    "28-10-2026": {
+        "invitados": "Invitado 39",
+        "tema": "Tema del episodio 39",
+        "tags": [
+            "podcast",
+            "tag39"
+        ]
+    },
+    "11-11-2026": {
+        "invitados": "Invitado 40",
+        "tema": "Tema del episodio 40",
+        "tags": [
+            "podcast",
+            "tag40"
+        ]
+    },
+    "25-11-2026": {
+        "invitados": "Invitado 41",
+        "tema": "Tema del episodio 41",
+        "tags": [
+            "podcast",
+            "tag41"
+        ]
+    },
+    "09-12-2026": {
+        "invitados": "Invitado 42",
+        "tema": "Tema del episodio 42",
+        "tags": [
+            "podcast",
+            "tag42"
+        ]
+    },
+    "23-12-2026": {
+        "invitados": "Invitado 43",
+        "tema": "Tema del episodio 43",
+        "tags": [
+            "podcast",
+            "tag43"
+        ]
+    },
+    "06-01-2027": {
+        "invitados": "Invitado 44",
+        "tema": "Tema del episodio 44",
+        "tags": [
+            "podcast",
+            "tag44"
+        ]
+    },
+    "20-01-2027": {
+        "invitados": "Invitado 45",
+        "tema": "Tema del episodio 45",
+        "tags": [
+            "podcast",
+            "tag45"
+        ]
+    },
+    "03-02-2027": {
+        "invitados": "Invitado 46",
+        "tema": "Tema del episodio 46",
+        "tags": [
+            "podcast",
+            "tag46"
+        ]
+    },
+    "17-02-2027": {
+        "invitados": "Invitado 47",
+        "tema": "Tema del episodio 47",
+        "tags": [
+            "podcast",
+            "tag47"
+        ]
+    },
+    "03-03-2027": {
+        "invitados": "Invitado 48",
+        "tema": "Tema del episodio 48",
+        "tags": [
+            "podcast",
+            "tag48"
+        ]
+    },
+    "17-03-2027": {
+        "invitados": "Invitado 49",
+        "tema": "Tema del episodio 49",
+        "tags": [
+            "podcast",
+            "tag49"
+        ]
+    },
+    "31-03-2027": {
+        "invitados": "Invitado 50",
+        "tema": "Tema del episodio 50",
+        "tags": [
+            "podcast",
+            "tag50"
+        ]
+    }
+}
