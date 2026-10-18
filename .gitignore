@@ -13,3 +13,8 @@
 .externalNativeBuild
 .cxx
 local.properties
+
+# Agent & Scripts Caches
+.agent/
+__pycache__/
+*.pyc
