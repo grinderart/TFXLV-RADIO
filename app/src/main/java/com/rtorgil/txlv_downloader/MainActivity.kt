@@ -30,7 +30,14 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
+import android.content.res.Configuration
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.ui.draw.clip
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -47,6 +54,10 @@ import androidx.core.content.ContextCompat
 import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
 import androidx.media3.exoplayer.ExoPlayer
+import androidx.media3.session.MediaController
+import androidx.media3.session.SessionToken
+import android.content.ComponentName
+import com.google.common.util.concurrent.ListenableFuture
 import com.rtorgil.txlv_downloader.ui.theme.LatestCardBg
 import com.rtorgil.txlv_downloader.ui.theme.TXLVDownloaderTheme
 import kotlinx.coroutines.Dispatchers
@@ -68,11 +79,9 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             TXLVDownloaderTheme {
-                var showSplash by remember { mutableStateOf(true) }
-                
-                if (showSplash) {
+                if (!viewModel.isSplashFinished) {
                     SplashScreen(viewModel = viewModel) {
-                        showSplash = false
+                        viewModel.isSplashFinished = true
                     }
                 } else {
                     AppContent(viewModel = viewModel, audioActionHandler = audioActionHandler)
@@ -158,10 +167,10 @@ fun AppContent(
     val coroutineScope = rememberCoroutineScope()
 
     var isSharing by remember { mutableStateOf(false) }
-    var selectedEpisodeForPlayback by remember { mutableStateOf<Episode?>(null) }
-    var exoPlayer by remember { mutableStateOf<ExoPlayer?>(null) }
+    var exoPlayer by remember { mutableStateOf<Player?>(null) }
+    var controllerFuture by remember { mutableStateOf<ListenableFuture<MediaController>?>(null) }
     var isPlaying by remember { mutableStateOf(false) }
-    var showExpandedPlayer by remember { mutableStateOf(false) }
+    var showExpandedPlayer by rememberSaveable { mutableStateOf(false) }
 
     var showFolderDialog by remember { mutableStateOf(false) }
     var showSocialDialog by remember { mutableStateOf(false) }
@@ -208,23 +217,50 @@ fun AppContent(
     }
 
     DisposableEffect(context) {
-        val player = ExoPlayer.Builder(context).build()
+        val sessionToken = SessionToken(context, ComponentName(context, PlaybackService::class.java))
+        val future = MediaController.Builder(context, sessionToken).buildAsync()
+        controllerFuture = future
+
+        var playerRef: MediaController? = null
         val listener = object : Player.Listener {
             override fun onIsPlayingChanged(isPlayingState: Boolean) {
                 isPlaying = isPlayingState
             }
         }
-        player.addListener(listener)
-        exoPlayer = player
+
+        future.addListener({
+            try {
+                val controller = future.get()
+                playerRef = controller
+                controller.addListener(listener)
+                exoPlayer = controller
+                
+                // Restore activeEpisode based on MediaItem so bottom player reappears!
+                if (controller.currentMediaItem != null) {
+                    val mediaId = controller.currentMediaItem?.mediaId
+                    val currentEp = viewModel.episodes.value.find { it.id == mediaId }
+                    if (currentEp != null) {
+                        viewModel.activeEpisode = currentEp
+                    }
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }, ContextCompat.getMainExecutor(context))
+
         onDispose {
-            player.removeListener(listener)
-            player.release()
+            playerRef?.removeListener(listener)
+            MediaController.releaseFuture(future)
         }
     }
 
-    LaunchedEffect(selectedEpisodeForPlayback) {
-        selectedEpisodeForPlayback?.let { episode ->
-            exoPlayer?.setMediaItem(MediaItem.fromUri(episode.audioUrl))
+    LaunchedEffect(viewModel.activeEpisode) {
+        viewModel.activeEpisode?.let { episode ->
+            val folderName = getDownloadFolder(context)
+            val localUri = audioActionHandler.getDownloadedEpisodeUri(episode, folderName)
+            val uriToPlay = localUri ?: Uri.parse(episode.audioUrl)
+
+            exoPlayer?.setMediaItem(MediaItem.Builder().setUri(uriToPlay).setMediaId(episode.id).build())
             exoPlayer?.prepare()
             exoPlayer?.playWhenReady = true
         }
@@ -310,7 +346,7 @@ fun AppContent(
         },
         bottomBar = {
             Column {
-                if (selectedEpisodeForPlayback != null) {
+                if (viewModel.activeEpisode != null) {
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -322,7 +358,7 @@ fun AppContent(
                             Icon(Icons.Default.GraphicEq, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
                             Spacer(modifier = Modifier.width(12.dp))
                             Column(modifier = Modifier.weight(1f)) {
-                                Text(selectedEpisodeForPlayback!!.title, maxLines = 1, overflow = TextOverflow.Ellipsis, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                                Text(viewModel.activeEpisode!!.title, maxLines = 1, overflow = TextOverflow.Ellipsis, fontWeight = FontWeight.Bold, fontSize = 14.sp)
                             }
                             IconButton(onClick = {
                                 val currentPos = exoPlayer?.currentPosition ?: 0
@@ -344,7 +380,7 @@ fun AppContent(
                             }
                             IconButton(onClick = {
                                 exoPlayer?.stop()
-                                selectedEpisodeForPlayback = null
+                                viewModel.activeEpisode = null
                             }) {
                                 Icon(Icons.Default.Close, contentDescription = "Cerrar")
                             }
@@ -522,7 +558,7 @@ fun AppContent(
                                         }
 
                                         Row(verticalAlignment = Alignment.CenterVertically) {
-                                            Button(onClick = { selectedEpisodeForPlayback = latestEpisode }) {
+                                            Button(onClick = { viewModel.activeEpisode = latestEpisode }) {
                                                 Icon(Icons.Default.PlayArrow, contentDescription = null)
                                                 Spacer(modifier = Modifier.width(8.dp))
                                                 Text("Escuchar", fontSize = 16.sp)
@@ -575,7 +611,7 @@ fun AppContent(
                                     elevation = CardDefaults.cardElevation(defaultElevation = 3.dp)
                                 ) {
                                     Row(
-                                        modifier = Modifier.fillMaxWidth().clickable { selectedEpisodeForPlayback = episode }.padding(16.dp),
+                                        modifier = Modifier.fillMaxWidth().clickable { viewModel.activeEpisode = episode }.padding(16.dp),
                                         verticalAlignment = Alignment.CenterVertically
                                     ) {
                                     Box(
@@ -710,7 +746,7 @@ fun AppContent(
         }
         
         // Dialogs and Overlays
-        if (showExpandedPlayer && selectedEpisodeForPlayback != null) {
+        if (showExpandedPlayer && viewModel.activeEpisode != null) {
             ModalBottomSheet(
                 onDismissRequest = { showExpandedPlayer = false },
                 containerColor = MaterialTheme.colorScheme.surface
@@ -726,31 +762,44 @@ fun AppContent(
                     }
                 }
 
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 24.dp, vertical = 16.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
+                val configuration = LocalConfiguration.current
+                
+                val playerContent = @Composable {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text(
-                            text = selectedEpisodeForPlayback!!.title,
-                            style = MaterialTheme.typography.titleLarge,
-                            fontWeight = FontWeight.Bold,
-                            textAlign = TextAlign.Start,
-                            maxLines = 2,
-                            overflow = TextOverflow.Ellipsis,
-                            modifier = Modifier.weight(1f)
-                        )
-                        IconButton(onClick = { viewModel.toggleFavorite(selectedEpisodeForPlayback!!.id) }) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = viewModel.activeEpisode!!.title,
+                                style = MaterialTheme.typography.titleLarge,
+                                fontWeight = FontWeight.Bold,
+                                textAlign = TextAlign.Start,
+                                maxLines = 2,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                            Spacer(modifier = Modifier.height(4.dp))
+                            if (!viewModel.activeEpisode!!.invitados.isNullOrBlank()) {
+                                Text(
+                                    text = "Invitados: ${viewModel.activeEpisode!!.invitados}",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                            if (!viewModel.activeEpisode!!.tema.isNullOrBlank()) {
+                                Text(
+                                    text = "Tema: ${viewModel.activeEpisode!!.tema}",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        }
+                        IconButton(onClick = { viewModel.toggleFavorite(viewModel.activeEpisode!!.id) }) {
                             Icon(
-                                if (favoriteIds.contains(selectedEpisodeForPlayback!!.id)) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                                if (favoriteIds.contains(viewModel.activeEpisode!!.id)) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
                                 contentDescription = "Favorito",
-                                tint = if (favoriteIds.contains(selectedEpisodeForPlayback!!.id)) Color.Red else MaterialTheme.colorScheme.onSurfaceVariant
+                                tint = if (favoriteIds.contains(viewModel.activeEpisode!!.id)) Color.Red else MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
                     }
@@ -847,6 +896,51 @@ fun AppContent(
                     
                     Spacer(modifier = Modifier.height(48.dp))
                 }
+
+                if (configuration.orientation == Configuration.ORIENTATION_LANDSCAPE) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(16.dp)
+                    ) {
+                        Image(
+                            painter = painterResource(id = R.drawable.portada),
+                            contentDescription = null,
+                            modifier = Modifier
+                                .weight(0.4f)
+                                .aspectRatio(1f)
+                                .clip(RoundedCornerShape(16.dp))
+                        )
+                        Column(
+                            modifier = Modifier
+                                .weight(0.6f)
+                                .padding(start = 16.dp)
+                                .verticalScroll(rememberScrollState()),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            playerContent()
+                        }
+                    }
+                } else {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 24.dp, vertical = 16.dp)
+                            .verticalScroll(rememberScrollState()),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Image(
+                            painter = painterResource(id = R.drawable.portada),
+                            contentDescription = null,
+                            modifier = Modifier
+                                .fillMaxWidth(0.6f)
+                                .aspectRatio(1f)
+                                .clip(RoundedCornerShape(16.dp))
+                        )
+                        Spacer(modifier = Modifier.height(32.dp))
+                        playerContent()
+                    }
+                }
             }
         }
 
@@ -932,43 +1026,67 @@ fun AppContent(
         }
 
         if (showCreditsDialog) {
+            val versionName = try {
+                context.packageManager.getPackageInfo(context.packageName, 0).versionName ?: "Desconocida"
+            } catch (e: Exception) {
+                "Desconocida"
+            }
+
             AlertDialog(
                 onDismissRequest = { showCreditsDialog = false },
                 title = { Text("Créditos") },
                 text = {
-                    Column {
+                    Column(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
                         Text(
-                            "software open source , totalmente libre y sin judiadas ",
-                            fontSize = 16.sp
-                        )
-                        Spacer(modifier = Modifier.height(16.dp))
-                        Text(
-                            "Si te resulta útil, ¡invítame a un café! ☕",
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 18.sp,
+                            text = "Hecho con el ❤️, con Software Libre y Libre de Rastreadores, Peticiones de Datos y Políticas de Anti-Privacidad.",
+                            fontSize = 16.sp,
                             textAlign = TextAlign.Center,
                             modifier = Modifier.fillMaxWidth()
                         )
-                        Spacer(modifier = Modifier.height(16.dp))
-                        OutlinedButton(
-                            onClick = {
-                                context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://ko-fi.com/rtorgil")))
-                            },
+                        
+                        Column(
                             modifier = Modifier.fillMaxWidth(),
-                            contentPadding = PaddingValues(12.dp)
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
-                            Text("Apoyar en Ko-fi", fontSize = 18.sp)
+                            OutlinedButton(
+                                onClick = {
+                                    context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://ko-fi.com/rtorgil")))
+                                },
+                                modifier = Modifier.fillMaxWidth(),
+                                contentPadding = PaddingValues(12.dp)
+                            ) {
+                                Text("☕ Ko-fi", fontSize = 16.sp)
+                            }
+                            OutlinedButton(
+                                onClick = {
+                                    context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://paypal.me/rtorgil")))
+                                },
+                                modifier = Modifier.fillMaxWidth(),
+                                contentPadding = PaddingValues(12.dp)
+                            ) {
+                                Text("💸 PayPal", fontSize = 16.sp)
+                            }
+                            OutlinedButton(
+                                onClick = {
+                                    context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://rtorgil.ynh.fr/gitea/rtorgil/TXLV-Ivoox")))
+                                },
+                                modifier = Modifier.fillMaxWidth(),
+                                contentPadding = PaddingValues(12.dp)
+                            ) {
+                                Text("Repositorio Gitea", fontSize = 16.sp)
+                            }
                         }
-                        Spacer(modifier = Modifier.height(8.dp))
-                        OutlinedButton(
-                            onClick = {
-                                context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://paypal.me/rtorgil")))
-                            },
-                            modifier = Modifier.fillMaxWidth(),
-                            contentPadding = PaddingValues(12.dp)
-                        ) {
-                            Text("Apoyar en PayPal", fontSize = 18.sp)
-                        }
+
+                        Text(
+                            text = "Versión $versionName",
+                            fontSize = 12.sp,
+                            color = Color.Gray,
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.fillMaxWidth()
+                        )
                     }
                 },
                 confirmButton = {

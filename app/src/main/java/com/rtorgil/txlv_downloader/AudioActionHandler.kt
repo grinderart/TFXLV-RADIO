@@ -18,6 +18,35 @@ import java.net.URL
 
 class AudioActionHandler(private val context: Context) {
 
+    fun getDownloadedEpisodeUri(episode: Episode, folderName: String): Uri? {
+        val prefs = context.getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
+        val treeUriStr = prefs.getString("download_tree_uri", null)
+        val fileName = "Podcast_${episode.id}.mp3"
+
+        if (treeUriStr != null) {
+            try {
+                val treeUri = Uri.parse(treeUriStr)
+                val documentFile = androidx.documentfile.provider.DocumentFile.fromTreeUri(context, treeUri)
+                val file = documentFile?.findFile(fileName)
+                if (file != null && file.exists()) {
+                    return file.uri
+                }
+            } catch (e: Exception) {
+                Log.e("AudioActionHandler", "Error checking SAF download", e)
+            }
+        }
+        
+        // Check standard downloads folder
+        val downloadsDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
+        val folder = File(downloadsDir, folderName)
+        val localFile = File(folder, fileName)
+        if (localFile.exists()) {
+            return Uri.fromFile(localFile)
+        }
+
+        return null
+    }
+
     fun downloadEpisode(episode: Episode, folderName: String) {
         val prefs = context.getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
         val treeUriStr = prefs.getString("download_tree_uri", null)
@@ -79,6 +108,37 @@ class AudioActionHandler(private val context: Context) {
                 Log.e("AudioActionHandler", "Failed to enqueue download", e)
             }
         }
+    }
+
+    fun deleteEpisode(episode: Episode, folderName: String): Boolean {
+        val prefs = context.getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
+        val treeUriStr = prefs.getString("download_tree_uri", null)
+        val fileName = "Podcast_${episode.id}.mp3"
+        var deleted = false
+
+        if (treeUriStr != null) {
+            try {
+                val treeUri = Uri.parse(treeUriStr)
+                val documentFile = androidx.documentfile.provider.DocumentFile.fromTreeUri(context, treeUri)
+                val file = documentFile?.findFile(fileName)
+                if (file != null && file.exists()) {
+                    deleted = file.delete()
+                }
+            } catch (e: Exception) {
+                Log.e("AudioActionHandler", "Error deleting SAF download", e)
+            }
+        }
+        
+        if (!deleted) {
+            val downloadsDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
+            val folder = File(downloadsDir, folderName)
+            val localFile = File(folder, fileName)
+            if (localFile.exists()) {
+                deleted = localFile.delete()
+            }
+        }
+        
+        return deleted
     }
 
     suspend fun shareEpisode(episode: Episode) {

@@ -15,8 +15,8 @@ android {
         applicationId = "com.rtorgil.txlv_downloader"
         minSdk = 24
         targetSdk = 37
-        versionCode = 3
-        versionName = "1.3.1"
+        versionCode = 4
+        versionName = "1.4.3"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -77,6 +77,7 @@ dependencies {
     implementation(libs.play.services.location)
     implementation(libs.retrofit)
     implementation("androidx.media3:media3-exoplayer:1.4.1")
+    implementation("androidx.media3:media3-session:1.4.1")
     implementation("androidx.documentfile:documentfile:1.0.1")
     testImplementation(libs.androidx.core)
     testImplementation(libs.androidx.junit)

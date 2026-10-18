@@ -19,6 +19,9 @@ import java.net.HttpURLConnection
 import java.net.URL
 import java.text.SimpleDateFormat
 import java.util.Locale
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 
 data class MetadataObj(
     val invitados: String,
@@ -27,6 +30,8 @@ data class MetadataObj(
 )
 
 class PodcastViewModel(private val application: Application) : AndroidViewModel(application) {
+    var isSplashFinished by mutableStateOf(false)
+    
     companion object {
         const val RSS_FEED_URL = "https://feeds.ivoox.com/feed_fg_f12614052_filtro_1.xml"
         private const val TAG = "PodcastViewModel"
@@ -73,6 +78,15 @@ class PodcastViewModel(private val application: Application) : AndroidViewModel(
         }
     }
 
+    fun removeDownload(id: String) {
+        val currentSet = _downloadedIds.value
+        if (currentSet.contains(id)) {
+            val newSet = currentSet - id
+            _downloadedIds.value = newSet
+            prefs.edit().putString(DOWNLOADS_KEY, newSet.joinToString(",")).apply()
+        }
+    }
+
     private val _podcastTitle = MutableStateFlow("")
     val podcastTitle: StateFlow<String> = _podcastTitle.asStateFlow()
 
@@ -91,6 +105,8 @@ class PodcastViewModel(private val application: Application) : AndroidViewModel(
     fun updateSearchQuery(query: String) {
         _searchQuery.value = query
     }
+
+    var activeEpisode by mutableStateOf<Episode?>(null)
 
     fun fetchEpisodes(urlStr: String = RSS_FEED_URL) {
         viewModelScope.launch(Dispatchers.IO) {
