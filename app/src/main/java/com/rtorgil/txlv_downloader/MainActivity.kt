@@ -218,7 +218,7 @@ fun AppContent(
         withContext(Dispatchers.IO) {
             try {
                 val response = OkHttpClient().newCall(
-                    Request.Builder().url("https://rtorgil.ynh.fr/api/v1/repos/rtorgil/TXLV-Ivoox/releases/latest").build()
+                    Request.Builder().url("https://api.github.com/repos/grinderart/TFXLV-RADIO/releases/latest").build()
                 ).execute()
                 if (response.isSuccessful) {
                     val json = JSONObject(response.body?.string() ?: "")
@@ -1211,12 +1211,12 @@ fun AppContent(
                             }
                             OutlinedButton(
                                 onClick = {
-                                    context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://rtorgil.ynh.fr/gitea/rtorgil/TXLV-Ivoox")))
+                                    context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/grinderart/TFXLV-RADIO")))
                                 },
                                 modifier = Modifier.fillMaxWidth(),
                                 contentPadding = PaddingValues(12.dp)
                             ) {
-                                Text("Repositorio Gitea", fontSize = 16.sp)
+                                Text("Repositorio GitHub", fontSize = 16.sp)
                             }
                         }
 

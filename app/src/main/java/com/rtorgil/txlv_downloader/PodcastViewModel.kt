@@ -360,12 +360,22 @@ class PodcastViewModel(private val application: Application) : AndroidViewModel(
     private fun loadMetadata(context: Context): Map<String, MetadataObj> {
         val map = mutableMapOf<String, MetadataObj>()
         try {
-            val inputStream = context.assets.open("metadata.json")
-            val size = inputStream.available()
-            val buffer = ByteArray(size)
-            inputStream.read(buffer)
-            inputStream.close()
-            val jsonString = String(buffer, Charsets.UTF_8)
+            val jsonString = try {
+                val url = URL("https://raw.githubusercontent.com/grinderart/TFXLV-RADIO/main/app/src/main/assets/metadata.json")
+                val connection = url.openConnection() as HttpURLConnection
+                connection.connectTimeout = 5000
+                connection.readTimeout = 5000
+                connection.connect()
+                if (connection.responseCode == HttpURLConnection.HTTP_OK) {
+                    connection.inputStream.bufferedReader().use { it.readText() }
+                } else {
+                    context.assets.open("metadata.json").bufferedReader().use { it.readText() }
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "Error fetching remote metadata, falling back to local", e)
+                context.assets.open("metadata.json").bufferedReader().use { it.readText() }
+            }
+
             val jsonObject = JSONObject(jsonString)
 
             val keys = jsonObject.keys()
