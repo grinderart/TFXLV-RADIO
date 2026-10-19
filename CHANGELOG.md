@@ -1,5 +1,14 @@
 # Changelog
 
+## Versión 1.5 - Premium Update
+- **Memoria de reproducción:** La app ahora recuerda por dónde dejaste el episodio y lo retoma exactamente en el mismo segundo.
+- **Temporizador de Sueño (Sleep Timer):** Añadido un botón en el reproductor (icono del reloj/luna) para apagar la radio automáticamente tras 15, 30 o 60 minutos.
+- **Auto-Limpieza Inteligente:** Si descargas un episodio y lo escuchas hasta el final (95%), la app lo borrará automáticamente de tu teléfono para que nunca te quedes sin espacio.
+- **Notificaciones Diarias:** La app ahora comprueba en segundo plano si hay nuevos programas y te avisa con una notificación en tu móvil.
+- **Corrección de Errores:** 
+  - Sincronización perfecta del botón Play/Pausa con los auriculares y el reproductor del sistema.
+  - Restaurada la papelera de eliminación en la pestaña de Descargas.
+
 ## Version 1.2 - Release Notes
 
 Welcome to version 1.2 of TFXLV RADIO! We are thrilled to bring you a host of exciting new features and improvements to make your listening experience smoother and more enjoyable. Here is what's new in this release:

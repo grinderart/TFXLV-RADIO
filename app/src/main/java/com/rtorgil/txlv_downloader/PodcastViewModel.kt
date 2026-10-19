@@ -23,6 +23,11 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
+
 data class MetadataObj(
     val invitados: String,
     val tema: String,
@@ -47,6 +52,16 @@ class PodcastViewModel(private val application: Application) : AndroidViewModel(
 
     private val _downloadedIds = MutableStateFlow<Set<String>>(emptySet())
     val downloadedIds: StateFlow<Set<String>> = _downloadedIds.asStateFlow()
+
+    private val cleanedUpIds = mutableSetOf<String>()
+
+    fun isCleanupAllowed(id: String): Boolean = !cleanedUpIds.contains(id)
+
+    fun markCleanupDone(id: String) {
+        cleanedUpIds.add(id)
+    }
+
+    private val POSITION_PREFIX = "pos_"
 
     init {
         val savedFavorites = prefs.getString(FAVORITES_KEY, "") ?: ""
@@ -87,6 +102,14 @@ class PodcastViewModel(private val application: Application) : AndroidViewModel(
         }
     }
 
+    fun savePosition(id: String, position: Long) {
+        prefs.edit().putLong(POSITION_PREFIX + id, position).apply()
+    }
+
+    fun getSavedPosition(id: String): Long {
+        return prefs.getLong(POSITION_PREFIX + id, 0L)
+    }
+
     private val _podcastTitle = MutableStateFlow("")
     val podcastTitle: StateFlow<String> = _podcastTitle.asStateFlow()
 
@@ -107,6 +130,26 @@ class PodcastViewModel(private val application: Application) : AndroidViewModel(
     }
 
     var activeEpisode by mutableStateOf<Episode?>(null)
+
+    private val _sleepTimerEvent = MutableSharedFlow<Unit>()
+    val sleepTimerEvent = _sleepTimerEvent.asSharedFlow()
+
+    private var sleepTimerJob: Job? = null
+    var isSleepTimerActive by mutableStateOf(false)
+
+    fun setSleepTimer(minutes: Int) {
+        sleepTimerJob?.cancel()
+        if (minutes > 0) {
+            isSleepTimerActive = true
+            sleepTimerJob = viewModelScope.launch {
+                delay(minutes * 60 * 1000L)
+                isSleepTimerActive = false
+                _sleepTimerEvent.emit(Unit)
+            }
+        } else {
+            isSleepTimerActive = false
+        }
+    }
 
     fun fetchEpisodes(urlStr: String = RSS_FEED_URL) {
         viewModelScope.launch(Dispatchers.IO) {

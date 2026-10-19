@@ -68,6 +68,14 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import org.json.JSONObject
 
+import androidx.work.ExistingPeriodicWorkPolicy
+import androidx.work.PeriodicWorkRequestBuilder
+import androidx.work.WorkManager
+import java.util.concurrent.TimeUnit
+import android.Manifest
+import android.content.pm.PackageManager
+import android.os.Build
+
 class MainActivity : ComponentActivity() {
     private lateinit var audioActionHandler: AudioActionHandler
     private val viewModel: PodcastViewModel by viewModels()
@@ -75,6 +83,20 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         audioActionHandler = AudioActionHandler(this)
+        
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+                requestPermissions(arrayOf(Manifest.permission.POST_NOTIFICATIONS), 101)
+            }
+        }
+        
+        val workRequest = PeriodicWorkRequestBuilder<PodcastWorker>(24, TimeUnit.HOURS)
+            .build()
+        WorkManager.getInstance(this).enqueueUniquePeriodicWork(
+            "PodcastWorker",
+            ExistingPeriodicWorkPolicy.KEEP,
+            workRequest
+        )
         
         enableEdgeToEdge()
         setContent {
@@ -170,6 +192,7 @@ fun AppContent(
     var exoPlayer by remember { mutableStateOf<Player?>(null) }
     var controllerFuture by remember { mutableStateOf<ListenableFuture<MediaController>?>(null) }
     var isPlaying by remember { mutableStateOf(false) }
+    var playbackState by remember { mutableIntStateOf(Player.STATE_IDLE) }
     var showExpandedPlayer by rememberSaveable { mutableStateOf(false) }
 
     var showFolderDialog by remember { mutableStateOf(false) }
@@ -254,6 +277,40 @@ fun AppContent(
         }
     }
 
+    LaunchedEffect(exoPlayer) {
+        while (true) {
+            exoPlayer?.let { player ->
+                val pos = player.currentPosition
+                val duration = player.duration
+                if (pos > 0L) {
+                    viewModel.activeEpisode?.let { ep ->
+                        viewModel.savePosition(ep.id, pos)
+                        if (duration > 0) {
+                            val progress = pos.toFloat() / duration
+                            if (progress > 0.95f) {
+                                if (downloadedIds.contains(ep.id) && viewModel.isCleanupAllowed(ep.id)) {
+                                    val folderName = getDownloadFolder(context)
+                                    val deleted = audioActionHandler.deleteEpisode(ep, folderName)
+                                    if (deleted) {
+                                        viewModel.removeDownload(ep.id)
+                                        viewModel.markCleanupDone(ep.id)
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            delay(5000L)
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        viewModel.sleepTimerEvent.collect {
+            exoPlayer?.pause()
+        }
+    }
+
     LaunchedEffect(viewModel.activeEpisode) {
         viewModel.activeEpisode?.let { episode ->
             val folderName = getDownloadFolder(context)
@@ -261,6 +318,12 @@ fun AppContent(
             val uriToPlay = localUri ?: Uri.parse(episode.audioUrl)
 
             exoPlayer?.setMediaItem(MediaItem.Builder().setUri(uriToPlay).setMediaId(episode.id).build())
+            
+            val savedPos = viewModel.getSavedPosition(episode.id)
+            if (savedPos > 0L) {
+                exoPlayer?.seekTo(savedPos)
+            }
+            
             exoPlayer?.prepare()
             exoPlayer?.playWhenReady = true
         }
@@ -564,13 +627,26 @@ fun AppContent(
                                                 Text("Escuchar", fontSize = 16.sp)
                                             }
                                             Spacer(modifier = Modifier.width(8.dp))
-                                            IconButton(onClick = {
-                                                val folderName = getDownloadFolder(context)
-                                                audioActionHandler.downloadEpisode(latestEpisode, folderName)
-                                                viewModel.markAsDownloaded(latestEpisode.id)
-                                                Toast.makeText(context, "Iniciando descarga...", Toast.LENGTH_SHORT).show()
-                                            }) {
-                                                Icon(Icons.Default.Download, contentDescription = "Descargar")
+                                            if (downloadedIds.contains(latestEpisode.id)) {
+                                                IconButton(onClick = {
+                                                    val folderName = getDownloadFolder(context)
+                                                    val deleted = audioActionHandler.deleteEpisode(latestEpisode, folderName)
+                                                    if (deleted) {
+                                                        viewModel.removeDownload(latestEpisode.id)
+                                                        Toast.makeText(context, "Episodio eliminado", Toast.LENGTH_SHORT).show()
+                                                    }
+                                                }) {
+                                                    Icon(Icons.Default.Delete, contentDescription = "Eliminar")
+                                                }
+                                            } else {
+                                                IconButton(onClick = {
+                                                    val folderName = getDownloadFolder(context)
+                                                    audioActionHandler.downloadEpisode(latestEpisode, folderName)
+                                                    viewModel.markAsDownloaded(latestEpisode.id)
+                                                    Toast.makeText(context, "Iniciando descarga...", Toast.LENGTH_SHORT).show()
+                                                }) {
+                                                    Icon(Icons.Default.Download, contentDescription = "Descargar")
+                                                }
                                             }
                                             IconButton(onClick = {
                                                 coroutineScope.launch {
@@ -710,13 +786,26 @@ fun AppContent(
                                     }
                                     
                                     Column {
-                                        IconButton(onClick = {
-                                            val folderName = getDownloadFolder(context)
-                                            audioActionHandler.downloadEpisode(episode, folderName)
-                                            viewModel.markAsDownloaded(episode.id)
-                                            Toast.makeText(context, "Iniciando descarga...", Toast.LENGTH_SHORT).show()
-                                        }) {
-                                            Icon(Icons.Default.Download, contentDescription = "Descargar", tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                                        if (downloadedIds.contains(episode.id)) {
+                                            IconButton(onClick = {
+                                                val folderName = getDownloadFolder(context)
+                                                val deleted = audioActionHandler.deleteEpisode(episode, folderName)
+                                                if (deleted) {
+                                                    viewModel.removeDownload(episode.id)
+                                                    Toast.makeText(context, "Episodio eliminado", Toast.LENGTH_SHORT).show()
+                                                }
+                                            }) {
+                                                Icon(Icons.Default.Delete, contentDescription = "Eliminar", tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                                            }
+                                        } else {
+                                            IconButton(onClick = {
+                                                val folderName = getDownloadFolder(context)
+                                                audioActionHandler.downloadEpisode(episode, folderName)
+                                                viewModel.markAsDownloaded(episode.id)
+                                                Toast.makeText(context, "Iniciando descarga...", Toast.LENGTH_SHORT).show()
+                                            }) {
+                                                Icon(Icons.Default.Download, contentDescription = "Descargar", tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                                            }
                                         }
                                         IconButton(onClick = {
                                             coroutineScope.launch {
@@ -758,6 +847,8 @@ fun AppContent(
                     while (true) {
                         currentPosition = exoPlayer?.currentPosition ?: 0L
                         trackDuration = exoPlayer?.duration?.coerceAtLeast(0L) ?: 0L
+                        isPlaying = exoPlayer?.isPlaying == true
+                        playbackState = exoPlayer?.playbackState ?: Player.STATE_IDLE
                         delay(500L)
                     }
                 }
@@ -873,6 +964,8 @@ fun AppContent(
                     Spacer(modifier = Modifier.height(48.dp))
                     
                     var volume by remember { mutableFloatStateOf(exoPlayer?.volume ?: 1f) }
+                    var showSleepTimerMenu by remember { mutableStateOf(false) }
+
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
                         modifier = Modifier.fillMaxWidth()
@@ -892,6 +985,53 @@ fun AppContent(
                         )
                         @Suppress("DEPRECATION")
                         Icon(Icons.Default.VolumeUp, contentDescription = "Volume Up")
+                        
+                        Box {
+                            IconButton(onClick = { showSleepTimerMenu = true }) {
+                                Icon(
+                                    if (viewModel.isSleepTimerActive) Icons.Default.Bedtime else Icons.Default.Timer, 
+                                    contentDescription = "Sleep Timer",
+                                    tint = if (viewModel.isSleepTimerActive) MaterialTheme.colorScheme.primary else LocalContentColor.current
+                                )
+                            }
+                            DropdownMenu(
+                                expanded = showSleepTimerMenu,
+                                onDismissRequest = { showSleepTimerMenu = false }
+                            ) {
+                                DropdownMenuItem(
+                                    text = { Text("15 min") },
+                                    onClick = {
+                                        viewModel.setSleepTimer(15)
+                                        showSleepTimerMenu = false
+                                        Toast.makeText(context, "Temporizador: 15 min", Toast.LENGTH_SHORT).show()
+                                    }
+                                )
+                                DropdownMenuItem(
+                                    text = { Text("30 min") },
+                                    onClick = {
+                                        viewModel.setSleepTimer(30)
+                                        showSleepTimerMenu = false
+                                        Toast.makeText(context, "Temporizador: 30 min", Toast.LENGTH_SHORT).show()
+                                    }
+                                )
+                                DropdownMenuItem(
+                                    text = { Text("60 min") },
+                                    onClick = {
+                                        viewModel.setSleepTimer(60)
+                                        showSleepTimerMenu = false
+                                        Toast.makeText(context, "Temporizador: 60 min", Toast.LENGTH_SHORT).show()
+                                    }
+                                )
+                                DropdownMenuItem(
+                                    text = { Text("Desactivar") },
+                                    onClick = {
+                                        viewModel.setSleepTimer(0)
+                                        showSleepTimerMenu = false
+                                        Toast.makeText(context, "Temporizador desactivado", Toast.LENGTH_SHORT).show()
+                                    }
+                                )
+                            }
+                        }
                     }
                     
                     Spacer(modifier = Modifier.height(48.dp))

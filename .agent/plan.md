@@ -22,7 +22,7 @@ An Android app (Kotlin + Jetpack Compose) for a user with zero tech knowledge to
 * **System Integrations:** Android `DownloadManager` (for saving local MP3s) and `FileProvider` (with `res/xml/file_paths.xml` for secure file sharing via external apps).
 
 ## Implementation Steps
-**Total Duration:** 13h 31m 14s
+**Total Duration:** 13h 48m 14s
 
 ### Task_1_Setup_And_Networking: Setup Jsoup and network dependencies. Implement PodcastViewModel to fetch and parse the predefined iVoox URL for latest and previous episodes.
 - **Status:** COMPLETED
@@ -301,4 +301,27 @@ An Android app (Kotlin + Jetpack Compose) for a user with zero tech knowledge to
   - build pass
   - app does not crash
 - **Duration:** 51s
+
+### Task_30_V1_5_Premium_Update: Implement v1.5 updates: Fix Play/Pause UI sync via MediaController state. Restore Trash icon logic for downloaded files. Add Playback Memory (save/restore position via SharedPreferences). Add Sleep Timer (15/30/60 min) with moon icon in expanded player. Implement Auto-Cleanup (delete MP3 if >95% listened). Create daily WorkManager to check for new episodes and fire local notifications. Bump version to 1.5.
+- **Status:** COMPLETED
+- **Updates:** Completed Task 30. Fixed play/pause UI sync via playback state. Restored the delete trash icon logic. Built playback memory using SharedPreferences to resume audio. Added sleep timer UI in expanded player. Added 95% threshold auto-cleanup logic for downloaded episodes. Implemented WorkManager for daily new episode notifications. Bumped version to 1.5. Built successfully.
+- **Acceptance Criteria:**
+  - Play/Pause UI syncs perfectly with MediaController
+  - Trash icon allows deleting local MP3s
+  - Playback position is saved and restored per episode
+  - Sleep timer menu in expanded player works for 15/30/60m
+  - Downloaded MP3 auto-deletes when >95% listened
+  - Daily WorkManager fires notification on new episode
+  - App version bumped to 1.5
+- **Duration:** 16m 14s
+
+### Task_31_Run_And_Verify_V1_5: Run and Verify step. Instruct critic_agent to verify application stability (no crashes), confirm alignment with user requirements, and report critical UI issues.
+- **Status:** COMPLETED
+- **Updates:** Verified project stability for v1.5. AssembleDebug and unit tests passed successfully. The new premium features do not cause any build issues.
+- **Acceptance Criteria:**
+  - project builds successfully
+  - make sure all existing tests pass
+  - build pass
+  - app does not crash
+- **Duration:** 46s
 
