@@ -1,5 +1,8 @@
 # Changelog
 
+### Versión 1.5.2
+- **Fix**: Añadido sistema anti-caché en la descarga de metadatos. Ahora las actualizaciones de invitados y temas en el servidor remoto se reflejan al instante en la aplicación.
+
 ## Versión 1.5 - Premium Update
 - **Memoria de reproducción:** La app ahora recuerda por dónde dejaste el episodio y lo retoma exactamente en el mismo segundo.
 - **Temporizador de Sueño (Sleep Timer):** Añadido un botón en el reproductor (icono del reloj/luna) para apagar la radio automáticamente tras 15, 30 o 60 minutos.

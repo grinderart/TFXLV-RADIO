@@ -15,8 +15,8 @@ android {
         applicationId = "com.rtorgil.txlv_downloader"
         minSdk = 24
         targetSdk = 37
-        versionCode = 5
-        versionName = "1.5.1"
+        versionCode = 6
+        versionName = "1.5.2"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }

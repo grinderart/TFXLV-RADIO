@@ -365,6 +365,8 @@ class PodcastViewModel(private val application: Application) : AndroidViewModel(
                 val connection = url.openConnection() as HttpURLConnection
                 connection.connectTimeout = 5000
                 connection.readTimeout = 5000
+                connection.useCaches = false
+                connection.setRequestProperty("Cache-Control", "no-cache")
                 connection.connect()
                 if (connection.responseCode == HttpURLConnection.HTTP_OK) {
                     connection.inputStream.bufferedReader().use { it.readText() }
