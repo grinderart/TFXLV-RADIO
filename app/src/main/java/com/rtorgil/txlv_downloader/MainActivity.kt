@@ -628,14 +628,35 @@ fun AppContent(
                                             }
                                             Spacer(modifier = Modifier.width(8.dp))
                                             if (downloadedIds.contains(latestEpisode.id)) {
-                                                IconButton(onClick = {
-                                                    val folderName = getDownloadFolder(context)
-                                                    val deleted = audioActionHandler.deleteEpisode(latestEpisode, folderName)
-                                                    if (deleted) {
-                                                        viewModel.removeDownload(latestEpisode.id)
-                                                        Toast.makeText(context, "Episodio eliminado", Toast.LENGTH_SHORT).show()
-                                                    }
-                                                }) {
+                                                var showDeleteDialog by remember { mutableStateOf(false) }
+                                                
+                                                if (showDeleteDialog) {
+                                                    AlertDialog(
+                                                        onDismissRequest = { showDeleteDialog = false },
+                                                        title = { Text("¿Eliminar descarga?") },
+                                                        text = { Text("¿Estás seguro de que deseas borrar este programa del dispositivo para liberar espacio?") },
+                                                        confirmButton = {
+                                                            TextButton(onClick = {
+                                                                val folderName = getDownloadFolder(context)
+                                                                val deleted = audioActionHandler.deleteEpisode(latestEpisode, folderName)
+                                                                if (deleted) {
+                                                                    viewModel.removeDownload(latestEpisode.id)
+                                                                    Toast.makeText(context, "Episodio eliminado", Toast.LENGTH_SHORT).show()
+                                                                }
+                                                                showDeleteDialog = false
+                                                            }) {
+                                                                Text("Confirmar")
+                                                            }
+                                                        },
+                                                        dismissButton = {
+                                                            TextButton(onClick = { showDeleteDialog = false }) {
+                                                                Text("Cancelar")
+                                                            }
+                                                        }
+                                                    )
+                                                }
+                                                
+                                                IconButton(onClick = { showDeleteDialog = true }) {
                                                     Icon(Icons.Default.Delete, contentDescription = "Eliminar")
                                                 }
                                             } else {
@@ -652,7 +673,8 @@ fun AppContent(
                                                 coroutineScope.launch {
                                                     isSharing = true
                                                     Toast.makeText(context, "Preparando audio...", Toast.LENGTH_SHORT).show()
-                                                    audioActionHandler.shareEpisode(latestEpisode)
+                                                    val folderName = getDownloadFolder(context)
+                                                    audioActionHandler.shareEpisode(latestEpisode, folderName)
                                                     isSharing = false
                                                 }
                                             }) {
@@ -787,14 +809,35 @@ fun AppContent(
                                     
                                     Column {
                                         if (downloadedIds.contains(episode.id)) {
-                                            IconButton(onClick = {
-                                                val folderName = getDownloadFolder(context)
-                                                val deleted = audioActionHandler.deleteEpisode(episode, folderName)
-                                                if (deleted) {
-                                                    viewModel.removeDownload(episode.id)
-                                                    Toast.makeText(context, "Episodio eliminado", Toast.LENGTH_SHORT).show()
-                                                }
-                                            }) {
+                                            var showDeleteDialog by remember { mutableStateOf(false) }
+                                            
+                                            if (showDeleteDialog) {
+                                                AlertDialog(
+                                                    onDismissRequest = { showDeleteDialog = false },
+                                                    title = { Text("¿Eliminar descarga?") },
+                                                    text = { Text("¿Estás seguro de que deseas borrar este programa del dispositivo para liberar espacio?") },
+                                                    confirmButton = {
+                                                        TextButton(onClick = {
+                                                            val folderName = getDownloadFolder(context)
+                                                            val deleted = audioActionHandler.deleteEpisode(episode, folderName)
+                                                            if (deleted) {
+                                                                viewModel.removeDownload(episode.id)
+                                                                Toast.makeText(context, "Episodio eliminado", Toast.LENGTH_SHORT).show()
+                                                            }
+                                                            showDeleteDialog = false
+                                                        }) {
+                                                            Text("Confirmar")
+                                                        }
+                                                    },
+                                                    dismissButton = {
+                                                        TextButton(onClick = { showDeleteDialog = false }) {
+                                                            Text("Cancelar")
+                                                        }
+                                                    }
+                                                )
+                                            }
+                                            
+                                            IconButton(onClick = { showDeleteDialog = true }) {
                                                 Icon(Icons.Default.Delete, contentDescription = "Eliminar", tint = MaterialTheme.colorScheme.onSurfaceVariant)
                                             }
                                         } else {
@@ -811,7 +854,8 @@ fun AppContent(
                                             coroutineScope.launch {
                                                 isSharing = true
                                                 Toast.makeText(context, "Preparando audio...", Toast.LENGTH_SHORT).show()
-                                                audioActionHandler.shareEpisode(episode)
+                                                val folderName = getDownloadFolder(context)
+                                                audioActionHandler.shareEpisode(episode, folderName)
                                                 isSharing = false
                                             }
                                         }) {

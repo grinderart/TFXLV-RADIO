@@ -1,5 +1,10 @@
 # Changelog
 
+### Versión 1.5.3
+- **Compartir Inteligente (Smart Share):** Al compartir un programa por WhatsApp o redes, la aplicación ahora renombra el archivo de forma elegante y profesional: `Tenerife Despierta - [Nº] - Entrevista a [Invitado].mp3`.
+- **Ahorro de Datos Extremo:** Si ya has descargado un programa y decides compartirlo, la app utilizará el archivo local de forma ultrarrápida sin gastar tus datos móviles.
+- **Borrado Seguro:** Solucionado el fallo al eliminar programas descargados. Ahora se pide una doble confirmación para borrar el audio y liberar espacio en tu dispositivo.
+
 ### Versión 1.5.2
 - **Fix**: Añadido sistema anti-caché en la descarga de metadatos. Ahora las actualizaciones de invitados y temas en el servidor remoto se reflejan al instante en la aplicación.
 

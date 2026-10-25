@@ -122,29 +122,47 @@ class AudioActionHandler(private val context: Context) {
                 val documentFile = androidx.documentfile.provider.DocumentFile.fromTreeUri(context, treeUri)
                 val file = documentFile?.findFile(fileName)
                 if (file != null && file.exists()) {
-                    deleted = file.delete()
+                    if (file.delete()) deleted = true
                 }
             } catch (e: Exception) {
                 Log.e("AudioActionHandler", "Error deleting SAF download", e)
             }
         }
         
-        if (!deleted) {
-            val downloadsDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
-            val folder = File(downloadsDir, folderName)
-            val localFile = File(folder, fileName)
-            if (localFile.exists()) {
-                deleted = localFile.delete()
-            }
+        val downloadsDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
+        val folder = File(downloadsDir, folderName)
+        val localFile = File(folder, fileName)
+        if (localFile.exists()) {
+            if (localFile.delete()) deleted = true
         }
         
         return deleted
     }
 
-    suspend fun shareEpisode(episode: Episode) {
+    fun generateShareFileName(episode: Episode): String {
+        val regex = Regex("(?i)programa\\s*(?:nº|n|numero|#)?\\s*(\\d+)")
+        val matchResult = regex.find(episode.title)
+        val number = matchResult?.groupValues?.get(1)
+        val guests = episode.invitados?.trim() ?: ""
+
+        val baseName = if (number != null && guests.isNotEmpty()) {
+            "Tenerife Despierta - $number - Entrevista a $guests"
+        } else if (number != null) {
+            "Tenerife Despierta - $number"
+        } else if (guests.isNotEmpty()) {
+            "Tenerife Despierta - Entrevista a $guests"
+        } else {
+            "Tenerife Despierta - ${episode.title}"
+        }
+        
+        val sanitized = baseName.replace(Regex("[\\\\/:*?\"<>|]"), "_")
+        return "$sanitized.mp3"
+    }
+
+    suspend fun shareEpisode(episode: Episode, folderName: String) {
         withContext(Dispatchers.IO) {
             try {
-                // Download file to cache
+                // Download or copy file to cache
                 val cacheDir = File(context.cacheDir, "audio_cache")
                 if (!cacheDir.exists()) {
                     cacheDir.mkdirs()
@@ -153,42 +171,55 @@ class AudioActionHandler(private val context: Context) {
                 // Clear old files to save space
                 cacheDir.listFiles()?.forEach { if(it.isFile && it.name.endsWith(".mp3")) it.delete() }
 
-                val file = File(cacheDir, "Shared_Podcast_${episode.id}.mp3")
+                val shareFileName = generateShareFileName(episode)
+                val cacheFile = File(cacheDir, shareFileName)
 
-                val url = URL(episode.audioUrl)
-                val connection = url.openConnection() as HttpURLConnection
-                connection.instanceFollowRedirects = true
-                connection.setRequestProperty("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64)")
-                connection.connect()
-
-                if (connection.responseCode == HttpURLConnection.HTTP_OK) {
-                    val inputStream = connection.inputStream
-                    val outputStream = FileOutputStream(file)
-                    
-                    inputStream.use { input ->
-                        outputStream.use { output ->
+                val localUri = getDownloadedEpisodeUri(episode, folderName)
+                if (localUri != null) {
+                    // Copy existing file
+                    context.contentResolver.openInputStream(localUri)?.use { input ->
+                        FileOutputStream(cacheFile).use { output ->
                             input.copyTo(output)
                         }
                     }
-                    
-                    val uri = FileProvider.getUriForFile(
-                        context,
-                        "${context.packageName}.fileprovider",
-                        file
-                    )
-                    
-                    val shareIntent = Intent(Intent.ACTION_SEND).apply {
-                        type = "audio/mpeg"
-                        putExtra(Intent.EXTRA_STREAM, uri)
-                        addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                    }
-                    
-                    context.startActivity(Intent.createChooser(shareIntent, "Share Episode").apply {
-                        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                    })
                 } else {
-                    Log.e("AudioActionHandler", "Download for share failed: ${connection.responseCode}")
+                    // Download file
+                    val url = URL(episode.audioUrl)
+                    val connection = url.openConnection() as HttpURLConnection
+                    connection.instanceFollowRedirects = true
+                    connection.setRequestProperty("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64)")
+                    connection.connect()
+
+                    if (connection.responseCode == HttpURLConnection.HTTP_OK) {
+                        val inputStream = connection.inputStream
+                        val outputStream = FileOutputStream(cacheFile)
+                        
+                        inputStream.use { input ->
+                            outputStream.use { output ->
+                                input.copyTo(output)
+                            }
+                        }
+                    } else {
+                        Log.e("AudioActionHandler", "Download for share failed: ${connection.responseCode}")
+                        return@withContext
+                    }
                 }
+                
+                val uri = FileProvider.getUriForFile(
+                    context,
+                    "${context.packageName}.fileprovider",
+                    cacheFile
+                )
+                
+                val shareIntent = Intent(Intent.ACTION_SEND).apply {
+                    type = "audio/mpeg"
+                    putExtra(Intent.EXTRA_STREAM, uri)
+                    addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                }
+                
+                context.startActivity(Intent.createChooser(shareIntent, "Share Episode").apply {
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                })
             } catch (e: Exception) {
                 Log.e("AudioActionHandler", "Error sharing episode", e)
             }
